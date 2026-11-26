@@ -72,13 +72,17 @@
     .application-history .activity-copy span{color:#aaa}
     .application-history .activity-time{color:#aaa}
     .pool-date{font:9px var(--mono);color:#92928c;margin:-7px 0 12px;letter-spacing:.1px}
+    .brand-mark.brand-mark-linked{position:relative;display:block;width:30px;height:30px;flex:none;background:transparent;border-radius:0;color:#f2f2ef;font-size:0}
+    .brand-mark-linked i{position:absolute;width:17px;height:11px;border:2px solid currentColor;border-radius:8px;transform:rotate(-42deg)}
+    .brand-mark-linked i:first-child{left:1px;top:5px}
+    .brand-mark-linked i:last-child{right:1px;bottom:5px}
     @media(max-width:680px){.topbar{background:#050505}}
   </style>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand"><div class="brand-mark">p</div>poolchain<span>.</span></div>
+      <div class="brand"><div class="brand-mark brand-mark-linked" aria-hidden="true"><i></i><i></i></div>poolchain</div>
       <div class="nav-label">Workspace</div>
       <nav class="nav" id="navigation">
         <button class="active" data-tab="discover"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Havuzları keşfet</button>
