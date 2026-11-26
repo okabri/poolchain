@@ -1,0 +1,20 @@
+[toolchain]
+anchor_version = "0.31.1"
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+poolchain_escrow = "11111111111111111111111111111111"
+
+[programs.devnet]
+poolchain_escrow = "11111111111111111111111111111111"
+
+[provider]
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
