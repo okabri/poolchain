@@ -2,17 +2,20 @@
 anchor_version = "0.31.1"
 
 [features]
-seeds = false
+resolution = true
 skip-lint = false
 
-[programs.localnet]
-poolchain_escrow = "11111111111111111111111111111111"
-
 [programs.devnet]
-poolchain_escrow = "11111111111111111111111111111111"
+poolchain_escrow = "BpJYTgPV7xHj6X332MWvdP8pMiTpRaWTnCZXMKDneKPz"
+
+[programs.localnet]
+poolchain_escrow = "BpJYTgPV7xHj6X332MWvdP8pMiTpRaWTnCZXMKDneKPz"
+
+[registry]
+url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
