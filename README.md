@@ -2,10 +2,10 @@
 
 Bu depo şu an iki parçadan oluşuyor:
 
-- `index.html`: Poolchain tasarım prototipi. Havuz ve başvuru verilerini tarayıcıda saklar; cüzdanla zincir işlemi göndermez. Uygulama arayüzü henüz aşağıdaki programı çağırmıyor.
+- `index.html` + `devnet.js`: Poolchain arayüzü ve Phantom/Solflare ile Devnet işlemleri. Program ID girildiğinde havuzları zincirden okur; havuz oluşturma, başvuru, seçim ve eşit dağıtımı cüzdan onayına gönderir.
 - `programs/poolchain_escrow`: Solana/Anchor escrow programı kaynak kodu. SOL ve klasik SPL token havuzlarını destekler.
 
-**Önemli:** Escrow programı bu ortamda derlenmedi veya Devnet'e dağıtılmadı. Program ID henüz gerçek bir dağıtım adresi değil. Bu sebeple mevcut web arayüzünden fon yatırmayın; ekrandaki demo işlemleri zincir üstünde değildir.
+**Önemli:** Program bu ortamda henüz derlenmedi veya Devnet'e dağıtılmadı; `declare_id!` içindeki adres yer tutucudur. Arayüzün gerçek zincir modunu kullanabilmek için önce aşağıdaki dağıtımı tamamlayıp program ID'yi arayüzdeki “Program ID ayarla” alanına girmek gerekir. Bu işlem tamamlanmadan demo havuzlarına gerçek fon yatırmayın.
 
 ## Kurallar
 
@@ -17,18 +17,42 @@ Bu depo şu an iki parçadan oluşuyor:
 - Token desteği legacy SPL Token Program altındaki tokenlar içindir. Bilinmeyen mint adresleri resmi USDC/USDT olarak doğrulanmaz.
 - Kanıt dosyaları bu programda zincire yüklenmez. Mevcut prototipin dosyaları yalnızca yükleyen kişinin tarayıcısında saklanır; diğer kullanıcılara aktarılmaz.
 
-## Devnet'e hazırlama (WSL/Linux/macOS)
+## Devnet'e dağıtım (Windows / WSL)
 
-1. Solana CLI, Rust ve Anchor CLI 0.31.1 kurun. Windows kullanıyorsanız Anchor'ın resmi kurulum yönergeleri WSL kullanır: <https://www.anchor-lang.com/docs/installation>.
-2. `solana config set --url devnet` çalıştırın; test cüzdanı oluşturun ve Devnet SOL alın. Ana ağ cüzdanınızı bu test için kullanmayın.
-3. Depo kökünde `anchor keys sync` çalıştırın. Bu komut `declare_id!` ve `Anchor.toml` program adreslerini yeni program anahtar çiftine göre senkronlar. Program anahtar dosyasını gizli tutun ve asla Git'e eklemeyin.
-4. `anchor build` ile programı derleyin. Derleme hataları çözülmeden dağıtmayın.
-5. `anchor deploy --provider.cluster devnet` ile dağıtın. Cüzdan bu işlemi imzalamalıdır. CLI'nin verdiği Program ID'yi kaydedin; program adresini `anchor keys sync` tekrar yazar.
-6. Dağıtım sonrası `anchor test --skip-local-validator` ile Devnet testlerini çalıştırın (testler eklendikten sonra). Test cüzdanında yeterli Devnet SOL ve deneyeceğiniz SPL token bulunmalıdır.
+Windows bu bilgisayarda WSL özelliklerini etkinleştirdi; Windows yeniden başlatılana kadar WSL kullanılamaz. Yeniden başlattıktan sonra PowerShell'de `wsl --install -d Ubuntu` çalıştırın ve Ubuntu ilk kurulumunu tamamlayın. Anchor'ın resmi Windows yolu WSL'dir: <https://www.anchor-lang.com/docs/installation>.
 
-## Uygulama entegrasyonu durumu
+Ubuntu terminalinde resmi kurulum komutuyla Rust ve Solana araçlarını yükleyin; Windows için Anchor rehberi bu yöntemi öneriyor. Sonra Anchor AVM'yi kurup proje ile aynı 0.31.1 sürümünü seçin:
 
-Arayüzün gerçek işlemler gönderebilmesi için IDL ve gerçek Program ID ile Anchor istemcisi bağlanmalı. Şu an bu bağlantı eklenmiş değildir. On-chain başvurularda metin herkese açık kalır. Dosya kanıtları için ayrıca IPFS/Arweave gibi saklama katmanı, erişim modeli ve açık kullanıcı izni gerekir; özel belgeleri doğrudan zincire yazmayın.
+```bash
+curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
+cargo install --git https://github.com/otter-sec/anchor avm --force
+avm install 0.31.1
+avm use 0.31.1
+```
+
+Sonra Windows proje dizininin WSL yolu ile repo köküne gidin. Örneğin:
+
+```bash
+cd /mnt/c/Users/azraa/Documents/Codex/2026-11-26/i/outputs/dev3pach
+solana config set --url devnet
+solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
+solana airdrop 2
+mkdir -p target/deploy
+solana-keygen new --no-bip39-passphrase -o target/deploy/poolchain_escrow-keypair.json
+anchor keys sync
+anchor build
+anchor deploy --provider.cluster devnet
+```
+
+Eğer `anchor keys sync` program anahtarını bulamazsa, öncesinde `mkdir -p target/deploy` ve `solana-keygen new --no-bip39-passphrase -o target/deploy/poolchain_escrow-keypair.json` çalıştır. Cüzdan kurtarma kelimelerini veya `id.json` içeriğini kimseyle paylaşma ve Git'e ekleme. Test cüzdanında Devnet SOL ile havuz için kullanacağın token bulunmalı. Dağıtım başarılı olunca terminaldeki Program ID'yi kopyala; uygulamada **Program ID ayarla** düğmesinden kaydet.
+
+## Kullanım sınırları
+
+- Havuz başına 1–8 kişi seçilebilir; tutar en küçük birime kadar kişi sayısına kalansız bölünmelidir.
+- Pool ve başvuru metinleri herkese açık zincir verisidir. Başvuru mesajı en fazla 240 bayttır.
+- Token desteği klasik SPL Token Program'ı altındaki mintler içindir. USDC alanı Devnet USDC mint adresiyle başlar; diğer tokenlar için kendi Devnet mint adresini gir.
+- Başvuru dosyaları zincire veya sunucuya yüklenmiyor; yalnızca yükleyen tarayıcıda kalıyor. Havuz sahibi bunları göremez. Paylaşılacak kanıt dosyaları için ayrı, açık rızaya dayalı dosya depolama entegrasyonu gerekir.
+- SOL ve SPL havuzlarında fonlar PDA escrow hesabında tutulur. Bütün slotlar seçildikten sonra sadece havuz sahibi dağıtımı imzalayabilir.
 
 ## Program komutları
 
