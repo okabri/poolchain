@@ -5,7 +5,7 @@ Bu depo şu an iki parçadan oluşuyor:
 - `index.html` + `devnet.js`: Poolchain arayüzü ve Phantom/Solflare ile Devnet işlemleri. Program ID girildiğinde havuzları zincirden okur; havuz oluşturma, başvuru, seçim ve eşit dağıtımı cüzdan onayına gönderir.
 - `programs/poolchain_escrow`: Solana/Anchor escrow programı kaynak kodu. SOL ve klasik SPL token havuzlarını destekler.
 
-**Durum:** Program Anchor 0.31.1 ile derlendi ve Rust doğrulama testleri geçti. Devnet'e henüz dağıtılmadı. Dağıtımdan sonra program adresini arayüzdeki “Program ID ayarla” alanına girince Devnet zincir modu açılır; ID girilmeden demo modu görünür.
+**Durum:** Anchor 0.31.1 programı Solana Devnet'e dağıtıldı ve gerçek Devnet üzerinde uçtan uca SOL escrow testi geçti. Program ID: `BpJYTgPV7xHj6X332MWvdP8pMiTpRaWTnCZXMKDneKPz`. Uygulama bu ID'yi varsayılan kullanır; program ID'yi elle girme adımı gerekmez. Test havuzu oluşturma, başvuru, başvuranı seçme ve onayla eşit dağıtımı kapsar. [Başarılı dağıtım işlemi](https://explorer.solana.com/tx/3EnTVZySED1dc97szv85Ynjjd26Hk9y4WtBaa9BM6qiuUpbeu6vKK2s9qNG1YgKTNH9XBzxb7pq9mrCJEenGU9Ne?cluster=devnet) · [Uçtan uca ödeme işlemi](https://explorer.solana.com/tx/5wvbbDiyJRqe4t214rR4LNYqszUJLHYDTVcu8PjT88mxa9GubAHkh5Xakb1braLZ777MGnzH7xbMHETaKAUNjpVH?cluster=devnet).
 
 ## Kurallar
 
@@ -44,7 +44,19 @@ anchor build
 anchor deploy --provider.cluster devnet
 ```
 
-Devnet'te `solana airdrop` komutu herkese açık RPC'de kapalıdır. `solana address` çıktısını [Solana Devnet Faucet](https://faucet.solana.com/) sayfasına girerek CLI dağıtım cüzdanına test SOL iste. Daha sonra `solana balance --url devnet` ile bakiyeyi kontrol et. Program anahtarı `target/deploy/poolchain_escrow-keypair.json` içinde oluşturulur; bu dosya `.gitignore` kapsamındadır. Cüzdan dosyalarını ve kurtarma bilgilerini kimseyle paylaşma veya Git'e ekleme. Dağıtım başarılı olunca terminaldeki Program ID'yi arayüzdeki **Program ID ayarla** alanına yaz. Poolchain’de işlem yapacak Phantom/Solflare cüzdanına da ayrıca Devnet SOL gerekir.
+Devnet'te `solana airdrop` komutu herkese açık RPC'de kapalıdır. `solana address` çıktısını [Solana Devnet Faucet](https://faucet.solana.com/) sayfasına girerek CLI dağıtım cüzdanına test SOL iste. Daha sonra `solana balance --url devnet` ile bakiyeyi kontrol et. Program anahtarı `target/deploy/poolchain_escrow-keypair.json` içinde oluşturulur; bu dosya `.gitignore` kapsamındadır. Cüzdan dosyalarını ve kurtarma bilgilerini kimseyle paylaşma veya Git'e ekleme. Program yeniden dağıtılacaksa işlem sonrasında arayüzdeki Program ID ayarını güncelle. Poolchain’de işlem yapacak Phantom/Solflare cüzdanına da ayrıca Devnet SOL gerekir.
+
+Devnet uçtan uca smoke testini WSL'de çalıştır:
+
+```bash
+nvm install 22
+npm install
+ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+ANCHOR_WALLET=~/.config/solana/id.json \
+npx ts-mocha -p ./tsconfig.json -t 1000000 tests/devnet-smoke.ts
+```
+
+Bu test gerçek Devnet işlemleri üretir; geçici bir başvuran cüzdanına 0.02 SOL gönderir ve 0.01 SOL'luk test havuzunu dağıtır.
 
 ## Kullanım sınırları
 
