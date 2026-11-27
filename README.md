@@ -5,7 +5,7 @@ Bu depo şu an iki parçadan oluşuyor:
 - `index.html` + `devnet.js`: Poolchain arayüzü ve Phantom/Solflare ile Devnet işlemleri. Program ID girildiğinde havuzları zincirden okur; havuz oluşturma, başvuru, seçim ve eşit dağıtımı cüzdan onayına gönderir.
 - `programs/poolchain_escrow`: Solana/Anchor escrow programı kaynak kodu. SOL ve klasik SPL token havuzlarını destekler.
 
-**Önemli:** Program bu ortamda henüz derlenmedi veya Devnet'e dağıtılmadı; `declare_id!` içindeki adres yer tutucudur. Arayüzün gerçek zincir modunu kullanabilmek için önce aşağıdaki dağıtımı tamamlayıp program ID'yi arayüzdeki “Program ID ayarla” alanına girmek gerekir. Bu işlem tamamlanmadan demo havuzlarına gerçek fon yatırmayın.
+**Durum:** Program Anchor 0.31.1 ile derlendi ve Rust doğrulama testleri geçti. Devnet'e henüz dağıtılmadı. Dağıtımdan sonra program adresini arayüzdeki “Program ID ayarla” alanına girince Devnet zincir modu açılır; ID girilmeden demo modu görünür.
 
 ## Kurallar
 
@@ -19,7 +19,7 @@ Bu depo şu an iki parçadan oluşuyor:
 
 ## Devnet'e dağıtım (Windows / WSL)
 
-Windows bu bilgisayarda WSL özelliklerini etkinleştirdi; Windows yeniden başlatılana kadar WSL kullanılamaz. Yeniden başlattıktan sonra PowerShell'de `wsl --install -d Ubuntu` çalıştırın ve Ubuntu ilk kurulumunu tamamlayın. Anchor'ın resmi Windows yolu WSL'dir: <https://www.anchor-lang.com/docs/installation>.
+Bu proje WSL2 Ubuntu üzerinde hazırlandı. Yeni bir Windows kurulumunda WSL/Ubuntu'yu `wsl --install -d Ubuntu` ile kurun. Anchor'ın resmi Windows yolu WSL'dir: <https://www.anchor-lang.com/docs/installation>.
 
 Ubuntu terminalinde resmi kurulum komutuyla Rust ve Solana araçlarını yükleyin; Windows için Anchor rehberi bu yöntemi öneriyor. Sonra Anchor AVM'yi kurup proje ile aynı 0.31.1 sürümünü seçin:
 
@@ -35,8 +35,8 @@ Sonra Windows proje dizininin WSL yolu ile repo köküne gidin. Örneğin:
 ```bash
 cd /mnt/c/Users/azraa/Documents/Codex/2026-11-26/i/outputs/dev3pach
 solana config set --url devnet
-solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-solana airdrop 2
+solana-keygen new --silent --no-bip39-passphrase -o ~/.config/solana/id.json
+solana address
 mkdir -p target/deploy
 solana-keygen new --no-bip39-passphrase -o target/deploy/poolchain_escrow-keypair.json
 anchor keys sync
@@ -44,7 +44,7 @@ anchor build
 anchor deploy --provider.cluster devnet
 ```
 
-Eğer `anchor keys sync` program anahtarını bulamazsa, öncesinde `mkdir -p target/deploy` ve `solana-keygen new --no-bip39-passphrase -o target/deploy/poolchain_escrow-keypair.json` çalıştır. Cüzdan kurtarma kelimelerini veya `id.json` içeriğini kimseyle paylaşma ve Git'e ekleme. Test cüzdanında Devnet SOL ile havuz için kullanacağın token bulunmalı. Dağıtım başarılı olunca terminaldeki Program ID'yi kopyala; uygulamada **Program ID ayarla** düğmesinden kaydet.
+Devnet'te `solana airdrop` komutu herkese açık RPC'de kapalıdır. `solana address` çıktısını [Solana Devnet Faucet](https://faucet.solana.com/) sayfasına girerek CLI dağıtım cüzdanına test SOL iste. Daha sonra `solana balance --url devnet` ile bakiyeyi kontrol et. Program anahtarı `target/deploy/poolchain_escrow-keypair.json` içinde oluşturulur; bu dosya `.gitignore` kapsamındadır. Cüzdan dosyalarını ve kurtarma bilgilerini kimseyle paylaşma veya Git'e ekleme. Dağıtım başarılı olunca terminaldeki Program ID'yi arayüzdeki **Program ID ayarla** alanına yaz. Poolchain’de işlem yapacak Phantom/Solflare cüzdanına da ayrıca Devnet SOL gerekir.
 
 ## Kullanım sınırları
 
@@ -54,10 +54,17 @@ Eğer `anchor keys sync` program anahtarını bulamazsa, öncesinde `mkdir -p ta
 - Başvuru dosyaları zincire veya sunucuya yüklenmiyor; yalnızca yükleyen tarayıcıda kalıyor. Havuz sahibi bunları göremez. Paylaşılacak kanıt dosyaları için ayrı, açık rızaya dayalı dosya depolama entegrasyonu gerekir.
 - SOL ve SPL havuzlarında fonlar PDA escrow hesabında tutulur. Bütün slotlar seçildikten sonra sadece havuz sahibi dağıtımı imzalayabilir.
 
+## Yerel doğrulama
+
+```bash
+cargo test -p poolchain_escrow
+anchor build
+```
+
 ## Program komutları
 
-- `create_sol_pool(pool_id, amount_lamports, slots)`
-- `create_token_pool(pool_id, amount_base_units, slots)`
+- `create_sol_pool(pool_id, amount_lamports, slots, name, description, category)`
+- `create_token_pool(pool_id, amount_base_units, slots, name, description, category)`
 - `apply(message)`
 - `select_applicant()`
 - `approve_and_distribute()`
