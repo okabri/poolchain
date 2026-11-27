@@ -16,13 +16,15 @@ const APP_SELECTED: u8 = 1;
 pub mod poolchain_escrow {
     use super::*;
 
-    pub fn create_sol_pool(ctx: Context<CreateSolPool>, pool_id: u64, amount: u64, slots: u8) -> Result<()> {
+    pub fn create_sol_pool(ctx: Context<CreateSolPool>, pool_id: u64, amount: u64, slots: u8, name: String, description: String, category: String) -> Result<()> {
         validate_pool(amount, slots)?;
+        validate_metadata(&name, &description, &category)?;
         let pool = &mut ctx.accounts.pool;
         pool.set_inner(Pool {
             creator: ctx.accounts.creator.key(), pool_id, mint: Pubkey::default(), total_amount: amount,
             decimals: 9, is_sol: true, slots, applicants: 0, selected: 0, status: STATUS_OPEN,
             created_at: Clock::get()?.unix_timestamp, bump: ctx.bumps.pool,
+            name, description, category,
         });
         system_program::transfer(CpiContext::new(ctx.accounts.system_program.to_account_info(), Transfer {
             from: ctx.accounts.creator.to_account_info(), to: pool.to_account_info(),
@@ -30,14 +32,16 @@ pub mod poolchain_escrow {
         Ok(())
     }
 
-    pub fn create_token_pool(ctx: Context<CreateTokenPool>, pool_id: u64, amount: u64, slots: u8) -> Result<()> {
+    pub fn create_token_pool(ctx: Context<CreateTokenPool>, pool_id: u64, amount: u64, slots: u8, name: String, description: String, category: String) -> Result<()> {
         validate_pool(amount, slots)?;
+        validate_metadata(&name, &description, &category)?;
         require!(amount > 0, EscrowError::InvalidAmount);
         let pool = &mut ctx.accounts.pool;
         pool.set_inner(Pool {
             creator: ctx.accounts.creator.key(), pool_id, mint: ctx.accounts.mint.key(), total_amount: amount,
             decimals: ctx.accounts.mint.decimals, is_sol: false, slots, applicants: 0, selected: 0,
             status: STATUS_OPEN, created_at: Clock::get()?.unix_timestamp, bump: ctx.bumps.pool,
+            name, description, category,
         });
         token::transfer_checked(CpiContext::new(ctx.accounts.token_program.to_account_info(), TransferChecked {
             from: ctx.accounts.creator_token.to_account_info(), mint: ctx.accounts.mint.to_account_info(),
@@ -50,6 +54,7 @@ pub mod poolchain_escrow {
         require!(message.as_bytes().len() <= MAX_MESSAGE_BYTES, EscrowError::MessageTooLong);
         let pool = &mut ctx.accounts.pool;
         require!(pool.status == STATUS_OPEN, EscrowError::PoolClosed);
+        require!(pool.selected < pool.slots, EscrowError::SlotsFull);
         require!(pool.applicants < 500, EscrowError::TooManyApplicants);
         ctx.accounts.application.set_inner(Application {
             pool: pool.key(), applicant: ctx.accounts.applicant.key(), status: APP_PENDING, message,
@@ -130,6 +135,13 @@ pub mod poolchain_escrow {
     }
 }
 
+fn validate_metadata(name: &str, description: &str, category: &str) -> Result<()> {
+    require!(!name.trim().is_empty() && name.len() <= 48, EscrowError::InvalidMetadata);
+    require!(!description.trim().is_empty() && description.len() <= 180, EscrowError::InvalidMetadata);
+    require!(!category.trim().is_empty() && category.len() <= 24, EscrowError::InvalidMetadata);
+    Ok(())
+}
+
 fn validate_pool(amount: u64, slots: u8) -> Result<()> {
     require!(amount > 0, EscrowError::InvalidAmount);
     require!(slots > 0 && slots <= MAX_SLOTS, EscrowError::InvalidSlots);
@@ -196,8 +208,9 @@ pub struct Pool {
     pub creator: Pubkey, pub pool_id: u64, pub mint: Pubkey, pub total_amount: u64,
     pub decimals: u8, pub is_sol: bool, pub slots: u8, pub applicants: u16, pub selected: u8,
     pub status: u8, pub created_at: i64, pub bump: u8,
+    pub name: String, pub description: String, pub category: String,
 }
-impl Pool { pub const SPACE: usize = 8 + 32 + 8 + 32 + 8 + 1 + 1 + 1 + 2 + 1 + 1 + 8 + 1; }
+impl Pool { pub const SPACE: usize = 8 + 32 + 8 + 32 + 8 + 1 + 1 + 1 + 2 + 1 + 1 + 8 + 1 + (4 + 48) + (4 + 180) + (4 + 24); }
 
 #[account]
 #[derive(Clone)]
@@ -218,6 +231,7 @@ pub enum EscrowError {
     #[msg("Recipient addresses must be unique")] DuplicateRecipient,
     #[msg("The escrow does not contain enough distributable balance")] InsufficientEscrow,
     #[msg("Arithmetic overflow")] MathOverflow,
+    #[msg("Pool name, description, or category is invalid")] InvalidMetadata,
     #[msg("SPL token accounts were not provided")] MissingTokenAccounts,
 }
 
