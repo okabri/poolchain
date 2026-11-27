@@ -2,6 +2,7 @@ const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgra
 const { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, getMint, createAssociatedTokenAccountIdempotentInstruction } = await import('https://esm.sh/@solana/spl-token@0.4.14?external=@solana/web3.js');
 
 const RPC='https://api.devnet.solana.com';
+const DEFAULT_PROGRAM_ID='BpJYTgPV7xHj6X332MWvdP8pMiTpRaWTnCZXMKDneKPz';
 const POOL_SIZE=368;
 const enc=new TextEncoder(), dec=new TextDecoder();
 const utf8=s=>enc.encode(s);
@@ -10,7 +11,7 @@ const u64=n=>{let x=BigInt(n),a=new Uint8Array(8);for(let i=0;i<8;i++){a[i]=Numb
 const u32=n=>new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]);
 const string=s=>{const b=utf8(s);return concat(u32(b.length),b)};
 const disc=async name=>new Uint8Array(await crypto.subtle.digest('SHA-256',utf8(`global:${name}`))).slice(0,8);
-const key=()=>new PublicKey(localStorage.getItem('poolchain_program_id')||'');
+const key=()=>new PublicKey(localStorage.getItem('poolchain_program_id')||DEFAULT_PROGRAM_ID);
 const conn=()=>new Connection(RPC,'confirmed');
 const addr=p=>p.toBase58();
 function parsePool(account,address){
@@ -57,6 +58,6 @@ async function distribute(poolData,apps,provider){const program=key(),pool=new P
   for(const app of apps){const appKey=new PublicKey(app.address),recipient=new PublicKey(app.wallet);keys.push({pubkey:appKey,isSigner:false,isWritable:false},{pubkey:recipient,isSigner:false,isWritable:true});if(poolData.asset!=='SOL'){const mint=new PublicKey(poolData.mint),ata=await getAssociatedTokenAddress(mint,recipient);const exists=await conn().getAccountInfo(ata);if(!exists)ixs.push(createAssociatedTokenAccountIdempotentInstruction(owner,ata,recipient,mint));keys.push({pubkey:ata,isSigner:false,isWritable:true});}}
   ixs.push(new TransactionInstruction({programId:program,keys,data:await disc('approve_and_distribute')}));return send(ixs,provider)}
 function setProgramId(value){const p=new PublicKey(value.trim());localStorage.setItem('poolchain_program_id',p.toBase58());return p.toBase58()}
-window.PoolchainDevnet={rpc:RPC,configured:()=>{try{key();return true}catch{return false}},setProgramId,createPool,listPools,listApplications,apply,selectApplicant,distribute};
+window.PoolchainDevnet={rpc:RPC,programId:DEFAULT_PROGRAM_ID,configured:()=>{try{key();return true}catch{return false}},setProgramId,createPool,listPools,listApplications,apply,selectApplicant,distribute};
 window.dispatchEvent(new Event('poolchain-devnet-ready'));
 
