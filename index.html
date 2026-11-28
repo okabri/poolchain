@@ -133,7 +133,7 @@
     const savedSamplePools=JSON.parse(localStorage.getItem('poolchain_sample_pools')||'{}');
     initialPools.forEach(p=>{Object.assign(p,savedSamplePools[p.id]||{});p.candidates=p.candidates||[]});
     const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    let userPools=JSON.parse(localStorage.getItem('d3p_pools')||'[]'), applications=JSON.parse(localStorage.getItem('d3p_apps')||'[]').filter(a=>!String(a.pool||'').startsWith('sample-')), filter='All', tab='discover', walletAddress='', chainPools=[];
+    let userPools=JSON.parse(localStorage.getItem('d3p_pools')||'[]'), applications=JSON.parse(localStorage.getItem('d3p_apps')||'[]').filter(a=>{const pool=String(a.pool||'');return !pool.startsWith('sample-')&&!/^p[1-6]$/.test(pool)}), filter='All', tab='discover', walletAddress='', chainPools=[];
     const chainMode=()=>!!window.PoolchainDevnet?.configured();
     const allPools=()=>chainMode()?[...chainPools,...initialPools]:[...userPools,...initialPools];
     const formatSol=n=>Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6});
